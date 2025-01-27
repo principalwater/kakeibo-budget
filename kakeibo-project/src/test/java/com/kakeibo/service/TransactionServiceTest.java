@@ -1,8 +1,7 @@
-package com.kakeibo;
+package com.kakeibo.service;
 
 import com.kakeibo.model.Transaction;
 import com.kakeibo.repository.TransactionRepository;
-import com.kakeibo.service.TransactionService;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.context.SpringBootTest;
