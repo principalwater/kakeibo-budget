@@ -1,38 +1,66 @@
 package com.kakeibo.scraper;
 
-import org.apache.commons.csv.CSVFormat;
-import org.apache.commons.csv.CSVRecord;
+import com.kakeibo.model.MoneyStateModel;
+import com.kakeibo.model.PaymentModel;
+import org.openqa.selenium.By;
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebElement;
 
-import java.io.FileReader;
-import java.io.Reader;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
-public class RaiffeisenScraper implements BankScraper {
+public class RaiffeisenScraper extends GenericScraper {
+
+    private final String username;
+    private final String password;
+
+    public RaiffeisenScraper(WebDriver driver, String username, String password) {
+        super(driver);
+        this.username = username;
+        this.password = password;
+    }
 
     @Override
-    public List<ParsedTransaction> parseTransactions(String filePath) {
-        List<ParsedTransaction> transactions = new ArrayList<>();
+    public String getProviderName() {
+        return "Raiffeisen";
+    }
 
-        try (Reader reader = new FileReader(filePath)) {
-            Iterable<CSVRecord> records = CSVFormat.DEFAULT
-                    .withHeader("Date", "Description", "Amount")
-                    .withFirstRecordAsHeader()
-                    .parse(reader);
+    @Override
+    public List<MoneyStateModel> scrapeAccounts() {
+        login(username, password);
 
-            for (CSVRecord record : records) {
-                ParsedTransaction transaction = new ParsedTransaction();
-                transaction.setDate(LocalDate.parse(record.get("Date"))); // Assuming "Date" is in ISO format
-                transaction.setDescription(record.get("Description"));
-                transaction.setAmount(Double.parseDouble(record.get("Amount")));
-                transactions.add(transaction);
+        driver.get("https://online.raiffeisen.ru/#/accounts");
+        waitForPageLoad();
+
+        List<WebElement> accountElements = waitForElements(By.className("account-widget"), 30);
+        List<MoneyStateModel> accounts = new ArrayList<>();
+
+        for (WebElement account : accountElements) {
+            try {
+                String name = account.findElement(By.className("product-header-title__name-text"))
+                        .getAttribute("textContent");
+
+                String amountText = account.findElement(By.className("product-header-info__value"))
+                        .getAttribute("textContent")
+                        .replaceAll("[^\\d,]", "");
+                double amount = Double.parseDouble(amountText.replace(",", "."));
+
+                String currency = account.findElement(By.className("amount__symbol"))
+                        .getAttribute("textContent");
+
+                accounts.add(new MoneyStateModel(name, amount, currency));
+            } catch (Exception e) {
+                System.err.println("Error parsing account: " + e.getMessage());
             }
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw new RuntimeException("Error parsing Raiffeisen Bank file", e);
         }
 
-        return transactions;
+        return accounts;
+    }
+
+    @Override
+    public List<PaymentModel> scrapeStatements(LocalDate startFrom) {
+        // Implement statement scraping similar to above
+        return null;
     }
 }

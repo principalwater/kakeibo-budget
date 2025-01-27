@@ -1,26 +1,58 @@
 package com.kakeibo.scraper;
 
+import com.kakeibo.model.MoneyStateModel;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.chrome.ChromeOptions;
 
 import java.util.List;
-import java.util.Objects;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class RaiffeisenScraperTest {
 
+    private WebDriver driver;
+    private RaiffeisenScraper scraper;
+
+    @BeforeEach
+    void setUp() {
+        // Set the ChromeDriver path
+        System.setProperty("webdriver.chrome.driver", "/opt/homebrew/bin/chromedriver");
+
+        // Specify the Chrome binary location
+        ChromeOptions options = new ChromeOptions();
+        options.setBinary("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome");
+
+        // Initialize WebDriver
+        driver = new ChromeDriver(options);
+
+        // Replace with valid credentials
+        String username = "test_username";
+        String password = "test_password";
+
+        // Initialize the scraper with WebDriver and credentials
+        scraper = new RaiffeisenScraper(driver, username, password);
+    }
+
+    @AfterEach
+    void tearDown() {
+        // Quit the WebDriver after the test
+        if (driver != null) {
+            driver.quit();
+        }
+    }
+
     @Test
-    void testParseTransactions() {
-        BankScraper scraper = new RaiffeisenScraper();
+    void testScrapeAccounts() {
+        // Invoke the scrapeAccounts method
+        List<MoneyStateModel> accounts = scraper.scrapeAccounts();
 
-        // Use classpath to load the test file
-        String filePath = Objects.requireNonNull(
-                getClass().getClassLoader().getResource("banks/raiffeisen-sample.csv")
-        ).getPath();
-
-        List<ParsedTransaction> transactions = scraper.parseTransactions(filePath);
-
-        assertThat(transactions).isNotEmpty();
-        assertThat(transactions.get(0).getDescription()).isEqualTo("Groceries");
+        // Assertions
+        assertNotNull(accounts, "Accounts list should not be null");
+        assertFalse(accounts.isEmpty(), "Accounts list should not be empty");
     }
 }
