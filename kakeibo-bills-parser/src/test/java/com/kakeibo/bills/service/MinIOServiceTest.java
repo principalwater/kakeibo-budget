@@ -1,5 +1,6 @@
 package com.kakeibo.bills.service;
 
+import com.kakeibo.bills.config.MinIOConfig;
 import io.minio.*;
 import io.minio.errors.*;
 import io.minio.messages.ErrorResponse;
@@ -36,11 +37,15 @@ class MinIOServiceTest {
 
     private MinIOService minIOService;
     private MinioClient minioClient;
+    private MinIOConfig minIOConfig;
 
     @BeforeEach
     void setUp() {
         minioClient = mock(MinioClient.class);
-        minIOService = new MinIOService(minioClient, "test-bucket");
+        minIOConfig = mock(MinIOConfig.class);
+        when(minIOConfig.getBucket()).thenReturn("test-bucket");
+
+        minIOService = new MinIOService(minioClient, minIOConfig);
     }
 
     @Test
