@@ -10,7 +10,8 @@
     <packaging>pom</packaging> <!-- Parent projects use POM packaging -->
 
     <modules>
-        <module>kakeibo-project</module> <!-- Submodule reference -->
+        <module>kakeibo-project</module>
+        <module>kakeibo-bills-parser</module> <!-- Submodule reference -->
     </modules>
 
     <properties>
