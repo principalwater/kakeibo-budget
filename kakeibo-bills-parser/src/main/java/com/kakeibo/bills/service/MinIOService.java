@@ -2,19 +2,20 @@ package com.kakeibo.bills.service;
 
 import com.kakeibo.bills.config.MinIOConfig;
 import io.minio.*;
-import io.minio.errors.MinioException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
 import java.io.InputStream;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 @Service
 public class MinIOService {
     private static final Logger log = LoggerFactory.getLogger(MinIOService.class);
+
     private final MinioClient minioClient;
     private final String bucketName;
 
@@ -23,46 +24,45 @@ public class MinIOService {
         this.bucketName = minIOConfig.getBucket();
     }
 
-    public void uploadFile(String fileName, InputStream inputStream, long size) {
+    /**
+     * Lists all files stored in the configured MinIO bucket.
+     *
+     * @return List of file names.
+     */
+    public List<String> listFiles() {
+        log.info("Listing files in bucket: {}", bucketName);
         try {
-            log.info("Uploading file to MinIO: {}", fileName);
-
-            // Ensure bucket exists
-            boolean found = minioClient.bucketExists(BucketExistsArgs.builder().bucket(bucketName).build());
-            if (!found) {
-                minioClient.makeBucket(MakeBucketArgs.builder().bucket(bucketName).build());
-                log.info("Created MinIO bucket: {}", bucketName);
-            }
-
-            // Upload file
-            minioClient.putObject(
-                    PutObjectArgs.builder()
-                            .bucket(bucketName)
-                            .object(fileName)
-                            .stream(inputStream, size, -1)
-                            .contentType("application/pdf")
-                            .build()
-            );
-
-            log.info("File uploaded successfully: {}", fileName);
+            return StreamSupport.stream(
+                            minioClient.listObjects(ListObjectsArgs.builder().bucket(bucketName).build()).spliterator(), false
+                    ).map(result -> {
+                        try {
+                            return result.get().objectName();
+                        } catch (Exception e) {
+                            log.error("Error retrieving object name from MinIO response: {}", e.getMessage());
+                            return null;
+                        }
+                    }).filter(Objects::nonNull)
+                    .collect(Collectors.toList());
         } catch (Exception e) {
-            log.error("Error uploading file to MinIO", e);
+            log.error("Unexpected error while listing files", e);
         }
+        return List.of();
     }
 
-    public InputStream downloadFile(String fileName) throws MinioException, InvalidKeyException, NoSuchAlgorithmException, IOException {
+    /**
+     * Downloads a file from MinIO.
+     *
+     * @param fileName The name of the file to download.
+     * @return InputStream of the file.
+     * @throws Exception If an error occurs while fetching the file.
+     */
+    public InputStream downloadFile(String fileName) throws Exception {
+        log.info("Downloading file from MinIO: {}", fileName);
         return minioClient.getObject(
-                GetObjectArgs.builder().bucket(bucketName).object(fileName).build()
+                GetObjectArgs.builder()
+                        .bucket(bucketName)
+                        .object(fileName)
+                        .build()
         );
-    }
-
-    public void deleteFile(String fileName) {
-        try {
-            minioClient.removeObject(
-                    RemoveObjectArgs.builder().bucket(bucketName).object(fileName).build()
-            );
-        } catch (Exception e) {
-            log.error("Error deleting file from MinIO", e);
-        }
     }
 }

@@ -1,3 +1,0 @@
-<configuration>
-    <logger name="org.springframework.boot.context.config" level="DEBUG"/>
-</configuration>

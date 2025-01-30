@@ -1,9 +1,13 @@
 spring:
+  config:
+    import: optional:env.properties  # Ensure Spring loads environment variables
+
   datasource:
-    url: jdbc:postgresql://localhost:5432/kakeibo
+    url: jdbc:postgresql://postgres_db:5432/kakeibo
     username: kakeibo_user
     password: kakeibo_pass
     driver-class-name: org.postgresql.Driver
+
   jpa:
     hibernate:
       ddl-auto: update
@@ -14,12 +18,13 @@ spring:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
 
   minio:
-    endpoint: http://localhost:9000
+    endpoint: http://nginx:9000
     access-key: minioadmin
     secret-key: minioadmin
     bucket: test-bucket
 
-logging:
-  level:
-    root: INFO
-    org.springframework.boot: DEBUG
+  scheduling:
+    enabled: true
+
+server:
+  port: 8080
